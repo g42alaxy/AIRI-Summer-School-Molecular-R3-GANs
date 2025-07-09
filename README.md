@@ -15,6 +15,7 @@
 
 *For your convenience in terms of choosing the best and most expressive model, we implemented `quality score` metrics as its was suggested in [this paper](https://openreview.net/pdf?id=KM7pXWG1xj). Enjoy!*
 # 1. R3-MolGAN
+Our MolGAN implementation include special tweaks and improvements in terms of chemoinformatic metrics, such as unique score and valid score. 
 
 ### 1.0 Environment setup:
 To build the environment:

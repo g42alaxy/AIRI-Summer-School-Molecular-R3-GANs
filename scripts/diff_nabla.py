@@ -259,7 +259,7 @@ def calculate_quality_score(smiles: tp.Iterable[str]) -> float:
         if qed_score >= 0.6 and sa_score <= 4:
             passed += 1
 
-    return passed / len(valid_mols)
+    return passed / len(smiles)
 
 
 def compute_metrics(mols: list[Chem.Mol]) -> dict[str, float]:

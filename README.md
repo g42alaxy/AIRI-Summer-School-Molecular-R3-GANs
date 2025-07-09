@@ -1,5 +1,5 @@
 <h1 align="center">
-    <img width="300" height="auto" src="https://github.com/user-attachments/assets/9d294e49-cd54-4dfd-88c4-437740cb4d4d" />
+    <img width="300" height="auto" src="https://github.com/user-attachments/assets/b9a002b9-4213-472e-a67a-20f6828b5b55" />
     <br>
     AIRI Summer School: Bringing R3-GAN to Molecule Generation Domain
     <br>
@@ -9,6 +9,7 @@
   
 [![Presentation](https://img.shields.io/badge/📊_Presentation-Google_Slides-orange)](https://docs.google.com/presentation/d/1d8HeLQwCl_oa7WI8OVOoWR22C9a3WJ8diN4sRolWQyE/edit?usp=sharing)
 [![Report](https://img.shields.io/badge/📄_Report-Overleaf-green)](https://www.overleaf.com/read/ytrgfcyfbdxx#16d5ff)
+
 
 </div>
 

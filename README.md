@@ -6,6 +6,8 @@
 </h1>
 
 ### 1. R3-MolGAN
+By default MolGAN is trained either on entire QM9 dataset, which is accessible via `download_dataset.sh` in `MolGAN/data/`, or on it's 5k-subset which is already prepared as `MolGAN/data/qm9_5k.smi`. Any `*.sdf` or `*.smi` dataset should be converted to MolGAN's graph representations with `sparse_molecular_dataset.py` 
+
 ### 2. R3-LatentGAN, trained on [MOSES](https://github.com/molecularsets/moses)
 LatentGAN requires separate environment, which can be installed as [MOSES](https://github.com/molecularsets/moses) benchmark installation instruction suggests. To setup the R3-LatentGAN, after [MOSES](https://github.com/molecularsets/moses) is installed, simply put everything from `latentgan/` into `moses/` folder. 
 

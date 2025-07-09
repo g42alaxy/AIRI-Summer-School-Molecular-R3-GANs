@@ -243,7 +243,6 @@ def calculate_quality_score(smiles: tp.Iterable[str]) -> float:
     :return: Fraction of unique and valid molecules with qed >= 0.6 and sascore <= 4.
     """
     valid_mols = []
-    # Берем unique, проверяем на валидность
     for smi in smiles:
         mol = Chem.MolFromSmiles(smi)
         if mol is not None:
@@ -251,7 +250,6 @@ def calculate_quality_score(smiles: tp.Iterable[str]) -> float:
 
     if not valid_mols:
         return 0.0
-    # Проверяем по qed и sascore (qed должно быть >= 0.6, sascore <= 4)
     passed = 0
     for mol in set(valid_mols):
         qed_score = QED.qed(mol)

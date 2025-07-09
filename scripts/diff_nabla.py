@@ -1,22 +1,27 @@
 import torch
-import numpy as np
 from ase.db import connect
+from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 import torch.optim as optim
 import time
 import os
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
-from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import QED
 from rdkit.Chem import Descriptors
-import sascorer 
-# from tqdm.auto import trange
+import typing as tp
+from egnn.models import EGNN_dynamics_QM9
+from equivariant_diffusion.en_diffusion import EnVariationalDiffusion
+import numpy as np
+from rdkit import Chem
+from qm9.rdkit_functions import build_molecule
+from rdkit.Contrib.SA_Score import sascorer
 
-# --- Параметры ---
-class FakeArgs:
+# --- Params ---
+class Args:
+    r"""
+    Project's config
+    """
     def __init__(self):
         self.batch_size = 32
         self.include_charges = False
@@ -35,63 +40,44 @@ class FakeArgs:
         self.save_epochs = 1
         self.lr = 1e-4
         self.wd = 0.0
-        self.n_epochs = 3000 
-        self.device = 'cuda:2' if torch.cuda.is_available() else 'cpu'
+        self.n_epochs = 100
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.remove_h = False
         self.normalization_factor = 1
-        # Изменяем параметры фиктивных признаков
-        self.dummy_int_dim = 0  # Отключаем integer признаки
-        self.dummy_float_dim = 0  # Отключаем float признаки
+        self.dummy_int_dim = 0
+        self.dummy_float_dim = 0
+        self.in_node_nf = len(atom_types)
+        self.context_node_nf = 0
 
-args = FakeArgs()
 
-n_samples = 100
-num_atoms = 20   # фиксированное число атомов
-device = args.device
-
-# n_nodes — просто число!
-n_nodes = num_atoms
-
-# node_mask: [batch_size, num_atoms]
-node_mask = torch.ones((n_samples, num_atoms), dtype=torch.float).to(device)
-node_mask_for_sample = node_mask.unsqueeze(-1)
-
-# edge_mask: [batch_size, num_atoms, num_atoms]
-edge_mask = torch.ones((n_samples, num_atoms, num_atoms), dtype=torch.bool).to(device)
-
-context = None
-
-# --- Определение атомных типов ---
-db_path = '../train_100k_v2_formation_energy_w_forces.db'
-full_db = connect(db_path)
-all_atom_types = set()
-for row in full_db.select():
-    nums = list(row.numbers)
-    if args.remove_h:
-        nums = [n for n in nums if n != 1]
-    all_atom_types.update(nums)
-atom_types = sorted(all_atom_types)
-print(f"Found {len(atom_types)} atom types: {atom_types}")
-
-args.in_node_nf = len(atom_types)
-args.context_node_nf = 0
-
-# --- Датасет с фиктивными признаками ---
+# --- Dataset ---
 class NablaDFTDataset(Dataset):
-    def __init__(self, db_path, max_samples=2000, atom_types=None, remove_h=False):
+    """
+    NablaDFT dataset wrapper
+    :param db_path: path to DB file
+    :param max_samples: max number of samples
+    :param atom_types: list of atom types
+    :param remove_h: whether to remove hydrogenes or not
+    """
+
+    def __init__(self,
+                 db_path: str,
+                 max_samples: int = 2000,
+                 atom_types: tp.Optional[list[str]] = None,
+                 remove_h: bool = False) -> None:
         self.db = connect(db_path)
         self.ids = [row.id for row in self.db.select()]
         self.max_samples = min(max_samples, len(self.ids)) if max_samples else len(self.ids)
         self.atom_types = atom_types
         self.remove_h = remove_h
-        
-    def __len__(self):
+
+    def __len__(self) -> int:
         return self.max_samples
-    
-    def __getitem__(self, idx):
+
+    def __getitem__(self, idx: int) -> dict[str, dict[str, Tensor] | Tensor]:
         real_id = self.ids[idx]
         row = self.db.get(real_id)
-        
+
         positions = torch.tensor(row.positions, dtype=torch.float32)
         atomic_numbers = torch.tensor(row.numbers, dtype=torch.long)
 
@@ -106,14 +92,14 @@ class NablaDFTDataset(Dataset):
                 one_hot_cat[i, self.atom_types.index(num)] = 1.
             else:
                 raise ValueError(f"Atom number {num} not in predefined types")
-        
-        # Только категориальные признаки
+
+        # categorical features only
         h_dict = {
             'categorical': one_hot_cat,
-            'integer': torch.zeros(len(atomic_numbers), 0, dtype=torch.float),  # Пустой integer
-            'float': torch.zeros(len(atomic_numbers), 0, dtype=torch.float)     # Пустой float
+            'integer': torch.zeros(len(atomic_numbers), 0, dtype=torch.float),  # empty integer
+            'float': torch.zeros(len(atomic_numbers), 0, dtype=torch.float)  # empty float
         }
-        
+
         atom_mask = torch.ones(len(atomic_numbers), dtype=torch.float32)
         center_of_mass = positions.mean(dim=0, keepdim=True)
         positions_centered = positions - center_of_mass
@@ -122,11 +108,17 @@ class NablaDFTDataset(Dataset):
             'positions': positions_centered,
             'h': h_dict,
             'atom_mask': atom_mask,
-            'charges': torch.zeros(len(atomic_numbers)) 
+            'charges': torch.zeros(len(atomic_numbers))
         }
 
-# --- DataLoader ---
-def collate_fn(batch):
+
+# --- DataLoaders ---
+def collate_fn(batch) -> dict[str, dict[str, Tensor] | Tensor]:
+    r"""
+    Collate function for dataloaders
+    :param batch: data batch
+    :return: dict of parameters
+    """
     max_n = max(item['positions'].shape[0] for item in batch)
     batch_size = len(batch)
     n_atom_types = batch[0]['h']['categorical'].shape[1]
@@ -150,84 +142,26 @@ def collate_fn(batch):
         'h': {
             'categorical': h_cat,
             'integer': torch.zeros(batch_size, max_n, 0),  # Пустой integer
-            'float': torch.zeros(batch_size, max_n, 0)     # Пустой float
+            'float': torch.zeros(batch_size, max_n, 0)  # Пустой float
         },
         'atom_mask': atom_mask,
         'charges': charges,
         'edge_mask': edge_mask,
     }
 
-dataset_train_full = NablaDFTDataset(
-    db_path=db_path,
-    max_samples=len(full_db),
-    atom_types=atom_types,
-    remove_h=args.remove_h
-)
 
-dataset_val = NablaDFTDataset(
-    db_path=db_path,
-    max_samples=200,
-    atom_types=atom_types,
-    remove_h=args.remove_h
-)
-
-train_loader = DataLoader(
-    dataset_train_full,
-    batch_size=args.batch_size,
-    shuffle=True,
-    num_workers=args.num_workers,
-    collate_fn=collate_fn
-)
-
-val_loader = DataLoader(
-    dataset_val,
-    batch_size=args.batch_size,
-    shuffle=False,
-    num_workers=args.num_workers,
-    collate_fn=collate_fn
-)
-
-print(f"Train size: {len(dataset_train_full)}, Val size: {len(dataset_val)}")
-
-# --- Модель ---
-from egnn.models import EGNN_dynamics_QM9
-from equivariant_diffusion.en_diffusion import EnVariationalDiffusion
-
-# Параметры нормализации (стандартные для QM9)
-norm_values = (1, 4, 1)
-norm_biases = (0, 0, 0)
-
-dynamics_model = EGNN_dynamics_QM9(
-    in_node_nf=args.in_node_nf,  # Только категориальные признаки
-    context_node_nf=args.context_node_nf,
-    n_dims=3,
-    hidden_nf=128,
-    device=args.device,
-    act_fn=torch.nn.SiLU(),
-    attention=True,
-    tanh=True,
-    norm_constant=1,
-    inv_sublayers=2,
-    sin_embedding=False
-).to(args.device)
-
-diffusion_model = EnVariationalDiffusion(
-    dynamics=dynamics_model,
-    in_node_nf=args.in_node_nf,  # Только категориальные признаки
-    n_dims=3,
-    timesteps=1000,
-    norm_values=norm_values,
-    norm_biases=norm_biases,
-    include_charges=False
-).to(args.device)
-
-optimizer = optim.Adam(diffusion_model.parameters(), lr=args.lr)
-
-
-def train_epoch(model, loader, optimizer):
+# --- Train function ---
+def train_epoch(model: torch.nn.Module, loader: DataLoader, optimizer: optim.Optimizer) -> float:
+    """
+    Function for one train epoch
+    :param model: diffusion model
+    :param loader: data loader
+    :param optimizer: optimizer
+    :return: loss value
+    """
     model.train()
-    total_loss = 0.
-    
+    total_loss = 0
+
     for batch in loader:
         positions = batch['positions'].to(args.device)
         h_dict = {
@@ -239,7 +173,7 @@ def train_epoch(model, loader, optimizer):
         edge_mask = batch['edge_mask'].to(args.device)
 
         optimizer.zero_grad()
-        
+
         loss_dict = model(
             x=positions,
             h=h_dict,
@@ -255,39 +189,44 @@ def train_epoch(model, loader, optimizer):
         else:
             raise ValueError("Unknown loss type")
         loss.backward()
-        
-        
+
         if args.clip_grad:
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            
+
         optimizer.step()
-        
+
         total_loss += loss.item() * positions.size(0)
-    
+
     return total_loss / len(loader.dataset)
 
 
-# --- Создание директории для сохранения моделей ---
-os.makedirs("saved_models", exist_ok=True)
-
-import numpy as np
-from rdkit import Chem
-from qm9.rdkit_functions import build_molecule
-
-def onehot_to_type_indices(onehot_rows):
+# --- Transformation of atom xyz to molecules
+def onehot_to_type_indices(onehot_rows: torch.Tensor) -> list[np.ndarray]:
+    r"""
+    One-hot to atom types
+    :param onehot_rows: one-hot encoded atoms
+    :return:
+    """
     if hasattr(onehot_rows, 'cpu'):
         onehot_rows = onehot_rows.cpu().numpy()
     return [np.int64(np.argmax(row)) for row in onehot_rows]
 
-def to_rdkit_mol(z_onehot_rows, pos):
+
+def to_rdkit_mol(z_onehot_rows: torch.Tensor, pos: torch.Tensor) -> Chem.Mol:
+    r"""
+    Transform XYZ to molecules
+    :param z_onehot_rows:
+    :param pos:
+    :return:
+    """
     dataset_info = {
         'name': 'geom',
-        "atom_decoder": ['H', 'B', 'C', 'N', 'O', 'F', 'Al', 'Si', 'P', 'S', 'Cl', 'As', 'Br', 'I', 'Hg', 'Bi']
+        "atom_decoder": ['H', 'C', 'N', 'O', 'F', 'S', 'Cl', 'Br']
     }
     type_indices = onehot_to_type_indices(z_onehot_rows)
     return build_molecule(pos, type_indices, dataset_info=dataset_info)
 
-def is_valid(mol):
+def is_valid(mol: Chem.Mol) -> bool:
     try:
         Chem.SanitizeMol(mol)
         return True
@@ -295,25 +234,10 @@ def is_valid(mol):
         return False
 
 
-# --- Обучение ---
-losses = []
-uniquenesses = []
-novelties = []
-validities = []
-
-data = pd.read_csv('../summary.csv.gz', compression='gzip')
-train_smiles_set = data.SMILES.unique()
-
-
-def calculate_quality_score(smiles) -> float:
+def calculate_quality_score(smiles: tp.Iterable[str]) -> float:
     """
-    Вычисляет долю уникальных, валидных молекул со значением qed >= 0.6 и sascore <= 4.
-    
-    Args:
-        smiles (Iterable): smiles строки
-
-    Returns:
-        float: доля "качественных" молекул среди всех, которые поданы на вход
+    :param smiles: SMILES strings
+    :return: Fraction of unique and valid molecules with qed >= 0.6 and sascore <= 4.
     """
     valid_mols = []
     # Берем unique, проверяем на валидность
@@ -335,19 +259,117 @@ def calculate_quality_score(smiles) -> float:
     return passed / len(valid_mols)
 
 
-def compute_metrics(mols):
+def compute_metrics(mols: list[Chem.Mol]) -> dict[str, float]:
+    """
+    Compute metrics for a list of molecules
+    :param mols: molecules
+    :return: dictionary of metrics
+    """
     metrics = []
     for mol in mols:
         if mol is not None:
             metrics.append({
                 'qed': QED.qed(mol),
                 'logp': Descriptors.MolLogP(mol),
-                'sa': sascorer.calculateScore(mol) 
+                'sa': sascorer.calculateScore(mol)
             })
         else:
             metrics.append(None)
     return metrics
 
+
+# --- Main configuration ---
+args = Args()
+
+n_samples = 100
+num_atoms = 20
+device = args.device
+
+n_nodes = num_atoms
+
+# node_mask: [batch_size, num_atoms]
+node_mask = torch.ones((n_samples, num_atoms), dtype=torch.float).to(device)
+node_mask_for_sample = node_mask.unsqueeze(-1)
+
+# edge_mask: [batch_size, num_atoms, num_atoms]
+edge_mask = torch.ones((n_samples, num_atoms, num_atoms), dtype=torch.bool).to(device)
+
+context = None
+
+# --- Defining the atom types ---
+db_path = '../train_100k_v2_formation_energy_w_forces.db'
+full_db = connect(db_path)
+all_atom_types = set()
+for row in full_db.select():
+    nums = list(row.numbers)
+    if args.remove_h:
+        nums = [n for n in nums if n != 1]
+    all_atom_types.update(nums)
+atom_types = sorted(all_atom_types)
+print(f"Found {len(atom_types)} atom types: {atom_types}")
+
+# --- Datasets and dataloaders ---
+dataset_train_full = NablaDFTDataset(
+    db_path=db_path,
+    max_samples=len(full_db),
+    atom_types=atom_types,
+    remove_h=args.remove_h
+)
+
+train_loader = DataLoader(
+    dataset_train_full,
+    batch_size=args.batch_size,
+    shuffle=True,
+    num_workers=args.num_workers,
+    collate_fn=collate_fn
+)
+
+print(f"Train size: {len(dataset_train_full)}")
+
+# --- Model ---
+
+# Normalization parameters
+norm_values = (1, 4, 1)
+norm_biases = (0, 0, 0)
+
+dynamics_model = EGNN_dynamics_QM9(
+    in_node_nf=args.in_node_nf,
+    context_node_nf=args.context_node_nf,
+    n_dims=3,
+    hidden_nf=128,
+    device=args.device,
+    act_fn=torch.nn.SiLU(),
+    attention=True,
+    tanh=True,
+    norm_constant=1,
+    inv_sublayers=2,
+    sin_embedding=False
+).to(args.device)
+
+diffusion_model = EnVariationalDiffusion(
+    dynamics=dynamics_model,
+    in_node_nf=args.in_node_nf,
+    n_dims=3,
+    timesteps=1000,
+    norm_values=norm_values,
+    norm_biases=norm_biases,
+    include_charges=False
+).to(args.device)
+
+optimizer = optim.Adam(diffusion_model.parameters(), lr=args.lr)
+
+
+# --- Create directories for model checkpoints ---
+os.makedirs("saved_models", exist_ok=True)
+
+# --- Training process ---
+losses = []
+uniquenesses = []
+novelties = []
+validities = []
+
+data = pd.read_csv('../summary.csv.gz', compression='gzip')
+train_smiles_set = data.SMILES.unique()
 
 qeds, logs, sas, quals = [], [], [], []
 
@@ -391,7 +413,7 @@ for epoch in range(args.n_epochs):
         plt.plot(uniquenesses, label='Uniqueness')
         plt.plot(novelties, label='Novelty')
         plt.legend(loc="upper left")
-        plt.savefig('metrics_large.png')
+        plt.savefig('metrics.png', dpi=150)
         plt.clf()
 
         qeds.append(mean_qed)
@@ -408,7 +430,7 @@ for epoch in range(args.n_epochs):
         axs[2].set_title('SA score')
         axs[3].plot(quals)
         axs[3].set_title('Quality')
-        plt.savefig('chem_metrics_large.png', dpi=150)
+        plt.savefig('chem_metrics.png', dpi=150)
         plt.clf()
     
     if (epoch+1) % args.save_epochs == 0:

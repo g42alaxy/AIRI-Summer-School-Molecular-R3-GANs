@@ -16,6 +16,9 @@ import numpy as np
 from rdkit import Chem
 from qm9.rdkit_functions import build_molecule
 from rdkit.Contrib.SA_Score import sascorer
+from rdkit import RDLogger
+lg = RDLogger.logger()
+lg.setLevel(RDLogger.CRITICAL)
 
 # --- Params ---
 class Args:

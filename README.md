@@ -6,8 +6,8 @@
 </h1>
 
 ### 1. R3-MolGAN
-### 2. R3-LatentGAN, trained on [moses](https://github.com/molecularsets/moses)
-LatentGAN requires separate environment, which can be installed as [moses](https://github.com/molecularsets/moses) benchmark suggests. To setup the R3-LatentGAN, after [moses](https://github.com/molecularsets/moses) installation simply put everything from `latentgan/` into `moses/` folder. 
+### 2. R3-LatentGAN, trained on [MOSES](https://github.com/molecularsets/moses)
+LatentGAN requires separate environment, which can be installed as [MOSES](https://github.com/molecularsets/moses) benchmark installation instruction suggests. To setup the R3-LatentGAN, after [MOSES](https://github.com/molecularsets/moses) is installed, simply put everything from `latentgan/` into `moses/` folder. 
 
 ##### 2.1 Training of R3-LatentGAN:
 ```shell
@@ -21,12 +21,22 @@ python3 scripts/sample.py r3latentgan --model_load=checkpoints_r3latent_300.pt -
 ```
 
 ##### 2.3 Samples evaluation R3-LatentGAN:
-Evaluation with moses metrics (note that here QED and other chemical metrics correspond to their W1-wasserstein distance from training ones)
+- Evaluation with  [MOSES](https://github.com/molecularsets/moses) metrics
+  
+<table>
+  <tr>
+    <td width="100%" style="background-color: #FFEBEE; border-left: 4px solid #F44336; padding: 12px; color: #C62828;">
+      <strong>Note:</strong> QED and other chemical metrics correspond to their W1-Wasserstein distance from training ones.
+    </td>
+  </tr>
+</table>
+
+
 ```shell
 python3 scripts/sample.py r3latentgan --model_load=checkpoints_r3latent_300.pt --config=config_r3latentgan --n_samples=15000 --gen_save=generated_molecules.smi --device=cuda:0 --vocab_load=vocab_r3latentgan
 ```
 
-Evaluation with self-implemented MolGAN-like metrics (including new quality metrics)
+- Evaluation with self-implemented MolGAN-like metrics (including new quality metrics)
 ```shell
 python3 assess_chem.py generated_molecules.smi
 ```

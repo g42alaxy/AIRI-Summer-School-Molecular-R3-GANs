@@ -5,6 +5,13 @@
     <br>
 </h1>
 
+<div align="center">
+  
+[![Presentation](https://img.shields.io/badge/🖼️_Presentation-Google_Slides-orange)](https://docs.google.com/presentation/d/1d8HeLQwCl_oa7WI8OVOoWR22C9a3WJ8diN4sRolWQyE/edit?usp=sharing)
+[![Report](https://img.shields.io/badge/📄_Report-Overleaf-green)]([https://www.overleaf.com/read/fvbnfvhqvfxb#345093](https://www.overleaf.com/read/ytrgfcyfbdxx#16d5ff))
+
+</div>
+
 ### 1. R3-MolGAN
 
 ##### 1.0 Environment setup:

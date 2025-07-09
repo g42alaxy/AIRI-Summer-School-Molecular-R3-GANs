@@ -1,7 +1,7 @@
 <h1 align="center">
     <img width="300" height="auto" src="https://github.com/user-attachments/assets/9d294e49-cd54-4dfd-88c4-437740cb4d4d" />
     <br>
-    AIRI Summer School: R3 GANs in Molecular domain
+    AIRI Summer School: Bringing R3-GAN to Molecule Generation Domain
     <br>
 </h1>
 

@@ -26,6 +26,7 @@ conda install rdkit
 pip install pysmiles
 pip install wandb
 pip install SQLAlchemy
+pip install optuna 
 ```
 
 ##### 1.1 Dateset preparation:

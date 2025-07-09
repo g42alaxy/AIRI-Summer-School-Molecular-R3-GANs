@@ -6,7 +6,7 @@
 </h1>
 
 ### 1. R3-MolGAN
-### 2. R3-LatentGAN
+### 2. R3-LatentGAN, trained on [moses](https://github.com/molecularsets/moses)
 LatentGAN requires separate environment, which can be installed as [moses](https://github.com/molecularsets/moses) benchmark suggests. To setup the R3-LatentGAN, after [moses](https://github.com/molecularsets/moses) installation simply put everything from `latentgan/` into `moses/` folder. 
 
 ##### 2.1 Training of R3-LatentGAN:

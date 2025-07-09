@@ -20,7 +20,8 @@ from rdkit import RDLogger
 lg = RDLogger.logger()
 lg.setLevel(RDLogger.CRITICAL)
 
-# --- Params ---
+
+# --- Config ---
 class Args:
     r"""
     Project's config
@@ -39,10 +40,10 @@ class Args:
         self.break_train_epoch = False
         self.test_epochs = 5
         self.visualize_every_batch = 100
-        self.num_workers = 0 
+        self.num_workers = 0
         self.save_epochs = 1
         self.lr = 1e-4
-        self.wd = 0.0
+        self.wd = 0
         self.n_epochs = 100
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.remove_h = False

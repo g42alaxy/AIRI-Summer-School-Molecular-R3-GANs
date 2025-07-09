@@ -1,0 +1,21 @@
+name: baseline_env
+channels:
+  - defaults
+dependencies:
+  - pip=25.1
+  - python=3.13.5
+  - setuptools=78.1.1
+  - sqlite=3.45.3
+  - tk=8.6.14
+  - tqdm=4.67.1
+  - pip:
+    - rdkit==2025.3.3
+    - pandas==2.3.0
+    - ase==3.25.0
+    - numpy
+    - torch==2.7.1+cu118
+    - torch-ema==0.3
+    - torch-geometric==2.6.1
+    - torchmetrics==1.0.1
+    - torchvision==0.22.1
+prefix: /opt/miniconda3

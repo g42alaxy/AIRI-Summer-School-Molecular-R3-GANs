@@ -5,7 +5,9 @@
     <br>
 </h1>
 
-Baseline model: [EDM](https://github.com/ehoogeboom/e3_diffusion_for_molecules), trained on [nablaDFT](https://github.com/AIRI-Institute/nablaDFT/).
+### 1. R3-MolGAN
+### 2. R3-LatentGAN
+### 3. Baseline model: [EDM](https://github.com/ehoogeboom/e3_diffusion_for_molecules), trained on [nablaDFT](https://github.com/AIRI-Institute/nablaDFT/).
 To reproduce our results:
 
 ```shell

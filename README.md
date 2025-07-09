@@ -38,8 +38,10 @@ By default MolGAN is trained either on entire QM9 dataset, which is accessible v
 
 ###### 1.2.1 Training R3-MolGAN:
 ```shell
-python3 scripts/train.py r3latentgan --model_save=checkpoints_r3latentgan  --config_save=config_r3latentgan  --vocab_save=vocab_r3latentgan --log_file=log_r3latentgan --device=cuda:0
+python main_r3gan.py --mol_data_dir data/qm9_5k.sparsedataset --batch_size=128 --eval_freq 5 --lambda_wgan 1 --n_molecules_validation 1000 --g_lr 1e-4 --d_lr 1e-4 --n_critic 1 --post_method soft_gumbel --lambda_gp 5.67
 ```
+
+In R3-MolGAN `lambda_gp` corresponds to $\gamma$, such that $R_1 = \frac{\gamma}{2} \|\nabla D_{y} \|^2_2$
 
 ###### 1.2.2 Optuna Tunning R3-MolGAN:
 Predefined search-space along with other simple tricks is set in `optuna_r3.py`, look up this file in case of any inquires 

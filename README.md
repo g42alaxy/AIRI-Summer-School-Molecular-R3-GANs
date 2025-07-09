@@ -15,6 +15,18 @@
 ### 1. R3-MolGAN
 
 ##### 1.0 Environment setup:
+To build the environment:
+```python3 
+conda create --name molgan_env python=3.12
+conda activate molgan_env
+conda install scikit-learn
+pip3 install torch --index-url https://download.pytorch.org/whl/cu118
+conda install pandas
+conda install rdkit
+pip install pysmiles
+pip install wandb
+pip install SQLAlchemy
+```
 
 ##### 1.1 Dateset preparation:
 

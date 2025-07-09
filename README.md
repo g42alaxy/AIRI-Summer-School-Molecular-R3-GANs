@@ -28,7 +28,7 @@ python3 scripts/sample.py r3latentgan --model_load=checkpoints_r3latent_300.pt -
 <table>
   <tr>
     <td width="100%" style="background-color: #FFEBEE; border-left: 4px solid #F44336; padding: 12px; color: #C62828;">
-      <strong>Note:</strong> QED and other chemical metrics correspond to their W1-Wasserstein distance from training ones.
+      <strong>Note:</strong> In MOSES, QED and other chemical metrics correspond to their W1-Wasserstein distance from training ones.
     </td>
   </tr>
 </table>

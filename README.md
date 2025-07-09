@@ -12,6 +12,7 @@
 
 </div>
 
+*For your convenience in terms of choosing the best and most expressive model, we implemented `quality score` metrics as its was suggested in [this paper](https://openreview.net/pdf?id=KM7pXWG1xj). Enjoy!*
 ### 1. R3-MolGAN
 
 ##### 1.0 Environment setup:

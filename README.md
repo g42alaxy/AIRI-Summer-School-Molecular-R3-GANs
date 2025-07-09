@@ -33,6 +33,26 @@ pip install optuna
 
 By default MolGAN is trained either on entire QM9 dataset, which is accessible via `download_dataset.sh` in `MolGAN/data/`, or on it's 5k-subset which is already prepared as `MolGAN/data/qm9_5k.smi`. Any `*.sdf` or `*.smi` dataset should be converted to MolGAN's graph representations with `sparse_molecular_dataset.py` 
 
+##### 1.2 Playing with R3-MolGAN:
+
+###### 1.2.1 Training R3-MolGAN:
+```shell
+python3 scripts/train.py r3latentgan --model_save=checkpoints_r3latentgan  --config_save=config_r3latentgan  --vocab_save=vocab_r3latentgan --log_file=log_r3latentgan --device=cuda:0
+```
+
+###### 1.2.2 Optuna Tunning R3-MolGAN:
+Predefined search-space along with other simple tricks is set in `optuna_r3.py`, look up this file in case of any inquires 
+- Initiating `wandb` 
+```shell
+wandb login
+>>>Your API key
+```
+
+- Starting `optuna` 
+```shell
+python3 optuna_r3.py
+```
+
 ### 2. R3-LatentGAN, trained on [MOSES](https://github.com/molecularsets/moses)
 
 ##### 2.0 Environment setup:

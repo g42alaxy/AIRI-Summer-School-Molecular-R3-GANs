@@ -241,7 +241,7 @@ def calculate_quality_score(smiles: tp.Iterable[str]) -> float:
     """
     valid_mols = []
     # Берем unique, проверяем на валидность
-    for smi in list(set(smiles)):
+    for smi in smiles:
         mol = Chem.MolFromSmiles(smi)
         if mol is not None:
             valid_mols.append(mol)
@@ -250,7 +250,7 @@ def calculate_quality_score(smiles: tp.Iterable[str]) -> float:
         return 0.0
     # Проверяем по qed и sascore (qed должно быть >= 0.6, sascore <= 4)
     passed = 0
-    for mol in valid_mols:
+    for mol in set(valid_mols):
         qed_score = QED.qed(mol)
         sa_score = sascorer.calculateScore(mol)
         if qed_score >= 0.6 and sa_score <= 4:

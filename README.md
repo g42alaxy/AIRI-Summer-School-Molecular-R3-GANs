@@ -1,7 +1,7 @@
 <h1 align="center">
     <img width="300" height="auto" src="https://github.com/user-attachments/assets/b9a002b9-4213-472e-a67a-20f6828b5b55" />
     <br>
-    AIRI Summer School: Bringing R3-GAN to Molecule Generation Domain
+    AIRI Summer School: Bringing R3GAN to Molecule Generation Domain
     <br>
 </h1>
 
@@ -14,7 +14,7 @@
 </div>
 
 *For your convenience in terms of choosing the best and most expressive model, we implemented `quality score` metrics as its was suggested in [this paper](https://openreview.net/pdf?id=KM7pXWG1xj). Enjoy!*
-# 1. R3-MolGAN
+# 1. R3MolGAN
 Our MolGAN implementation include special tweaks and improvements in terms of chemoinformatic metrics, such as unique score and valid score. 
 
 ### 1.0 Environment setup:
@@ -36,16 +36,16 @@ pip install optuna
 
 By default MolGAN is trained either on entire QM9 dataset, which is accessible via `download_dataset.sh` in `MolGAN/data/`, or on it's 5k-subset which is already prepared as `MolGAN/data/qm9_5k.smi`. Any `*.sdf` or `*.smi` dataset should be converted to MolGAN's graph representations with `sparse_molecular_dataset.py` 
 
-### 1.2 Playing with R3-MolGAN:
+### 1.2 Playing with R3MolGAN:
 
-##### 1.2.1 Training R3-MolGAN:
+##### 1.2.1 Training R3MolGAN:
 ```shell
 python main_r3gan.py --mol_data_dir data/qm9_5k.sparsedataset --batch_size=128 --eval_freq 5 --lambda_wgan 1 --n_molecules_validation 1000 --g_lr 1e-4 --d_lr 1e-4 --n_critic 1 --post_method soft_gumbel --lambda_gp 5.67
 ```
 
 In R3-MolGAN `lambda_gp` corresponds to $\gamma$, such that $R_1 = \frac{\gamma}{2} \|\nabla D_{y} \|^2_2$
 
-##### 1.2.2 Optuna Tunning R3-MolGAN:
+##### 1.2.2 Optuna Tunning R3MolGAN:
 Predefined search-space along with other simple tricks is set in `optuna_r3.py`, look up this file in case of any inquires 
 - Initiating `wandb` 
 ```shell
@@ -58,24 +58,24 @@ wandb login
 python3 optuna_r3.py
 ```
 
-# 2. R3-LatentGAN, trained on [MOSES](https://github.com/molecularsets/moses)
+# 2. R3LatentGAN, trained on [MOSES](https://github.com/molecularsets/moses)
 
 ### 2.0 Environment setup:
 
 LatentGAN requires separate environment, which can be installed as [MOSES](https://github.com/molecularsets/moses) benchmark installation instruction suggests. To setup the R3-LatentGAN, after [MOSES](https://github.com/molecularsets/moses) is installed, simply put everything from `latentgan/` into `moses/` folder. 
 
-### 2.1 Training of R3-LatentGAN:
+### 2.1 Training of R3LatentGAN:
 ```shell
 python3 scripts/train.py r3latentgan --model_save=checkpoints_r3latentgan  --config_save=config_r3latentgan  --vocab_save=vocab_r3latentgan --log_file=log_r3latentgan --device=cuda:0
 ```
 
-### 2.2 Sampling with R3-LatentGAN:
+### 2.2 Sampling with R3LatentGAN:
 Following examples samples with checkpoint after `300` epochs of training
 ```shell
 python3 scripts/sample.py r3latentgan --model_load=checkpoints_r3latent_300.pt --config=config_r3latentgan --n_samples=15000 --gen_save=generated_molecules.smi --device=cuda:0 --vocab_load=vocab_r3latentgan
 ```
 
-### 2.3 Samples evaluation R3-LatentGAN:
+### 2.3 Samples evaluation R3LatentGAN:
 - Evaluation with  [MOSES](https://github.com/molecularsets/moses) metrics
   
 <table>
